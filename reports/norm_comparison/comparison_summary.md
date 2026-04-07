@@ -71,6 +71,19 @@
 | E3. PC1 vs read-depth (r) | 0.3099 | 0.2340 | -0.0146 |
 | E4. ERBB2 CV within HER2+ | 0.1327 | 0.1902 | 0.1683 |
 
+**Correction (2026-04-07):** The RSEM-UQ-TSS E3 value (0.310) was computed from
+UQ data *without* TSS correction applied, due to a bug in `run_rsem.py` that loaded
+`01_tumor_norm` (UQ only) instead of `01_tumor_norm_uq_tss` (UQ+TSS). The TMM-edgeR
+pipeline correctly applied TSS correction, making the E3 comparison apples-to-oranges.
+With TSS correction applied to both methods, the corrected values are approximately:
+RSEM-UQ-TSS r ~ 0.18, TMM-TSS r ~ 0.14. TSS batch correction is the primary driver
+of read-depth confound removal; the TMM advantage on this specific metric is modest.
+TMM's dominant advantage remains in ERBB2 signal preservation (A5, B1, D5). The
+signal composite scores (Section A-D) are unaffected by this bug since they do not
+depend on E3. The noise composite is affected -- with corrected E3 values, the gap
+between TMM and RSEM-UQ on the noise dimension narrows. The `run_rsem.py` script
+has been fixed to load `01_tumor_norm_uq_tss`.
+
 ---
 
 ## Signal vs Noise Scorecard
@@ -97,7 +110,7 @@ Normalized rank composites (0..1 scale; higher is better for both).
 - **TPM strengthens HER2 signal vs RSEM:** Cohen's d increases by +0.04, AUC-ROC RNA by +0.019. Review whether this reflects genuine signal recovery or artifact.
   - TPM reduces read-depth confound in PC1 (E3 drops by 0.076).
 - **TMM strengthens HER2 signal vs RSEM:** Cohen's d increases by +0.10, AUC-ROC RNA by +0.026. Review whether this reflects genuine signal recovery or artifact.
-  - TMM reduces read-depth confound in PC1 (E3 drops by 0.324).
+  - TMM modestly reduces residual read-depth confound in PC1 after TSS correction (r ~ 0.14 vs 0.18). See E3 correction note above.
 
 **Recommendation:** Use the method with the highest (signal+noise)/2 composite score above, confirming with the absolute AUC-ROC RNA (B1) as the primary clinical relevance metric and E3 (PC1 read-depth confound) as the primary technical risk metric.
 

@@ -1,0 +1,148 @@
+
+---------------------------------
+
+There is Notebook 00 which was a draft notebook that performed exploratory QC and ML analyses. This included a heatmap describing association between principal components and clinical variables. Notably, "Tissue Source Site" was associated Tissue Source Site. Given that site should be a major source of bias, I think it make sense to address it explicitly. I would like to (1) spin out a separate set of python code that performs this analysis, so that it doesn't only live in the draft notebook. Name the python code so that it reflects its supporting role to Notebook 01, contributing to QC. and (2) Come up with a plan to explicitly quantify the impact /size of this bias source and (3) plan a way to address it (e.g., normalization by regression). As you perform this task, assume the role of Strategist as found in skills/user/strategist/skills.md. Store your analysis as shared context into skills/user/shared/. 
+
+---------------------------------
+
+The TSS analysis is successful and critical to the project. Please update Notebook 01 ("QC and Normalization") as follows. 
+(1) Migrate the original PCA association analysis and heatmap visualization from Notebook 00 ("Draft") into Notebook 01. 
+(2) Integrate the recent TSS analysis (see /skills/user/shared/ for additional context) into Notebook 00 to remove bias coming from Tissue Source Site. This addition should include code that gauges the size and impact of TSS bias, as well as steps taken to reduce this bias, and finally visualization of results that reduced this bias. 
+
+--------------------------------
+
+
+Here, I am working on a project performing QC and ML on RNAseq data to explore HER2 biology. 
+
+Quality control for read depth across samples lies upstream of all analyses, and so it is important to get it right. The central tension in this decision is that HER2-related changes in biology shifts the transcriptomic composition itself, meaning critical biological signal is intertwined with transcriptome size. for this reason, I have opted for RSEM values (which seem to have been already normalized by upper quantile for read depth) with targeted normalization for Tissue Source Site specifically. Key downstream analyses in Notebook 02a ("Identification and Subsets", in /notebooks subfolder) include (1) comparison of ERBB2 RNA expression versus copy number to predict HER2 label, and (2) unsupervised clustering to recapitulate known cancer subtypes of basal, HER2-enriched, and laminal (specifically the Silhouette profile across k-values, as well as comparison of gene expression to evaluate alignment with the known subtypes. 
+
+Here, I would like to double-check my choice of opting for RSEM values with narrow/targeted control for read depth. Alternative approaches for more explicit and broad normalization for read depth include TPM and TMM via edgeR. I want to derive such normalized values and perform downstream analyses (RNA vs CN, clustering) to see if HER2 biology is weaker or stronger. 
+
+The broad workflow would (1) establish metrics that describe biological signal strength, organized in predefined report form, (2) extract this info for RSEM approach from Notebook 02a, (3) write and execute code performing alternative normalizations and output metrics, (4) organize metrics into same predefined report. This sets us up for an Analyst agent (or human in the loop) to compare these reports. 
+
+I would like you to assume the role of "Strategist" (/skills/user/strategist/SKILLS.md) and write out a detailed plan for carrying out this analysis described above. Output should be markdown file in /skills/user/shared. Do not execute on it or code. 
+
+
+------
+
+Assume the role of "Analyst" (/skill/user/analyst/SKILLS.md") and perform Phase 1 in skills/user/shared/normalization_comparison_plan.md (extracting baseline metrics for RSEM-UQ-TSS from Notebook 02a) following standardized report format described in Phase 0. Let me know if you have questions. Export report to skills/user/shared/ unless specified otherwise in the plan markdown file (if so, just let me know). 
+
+------
+
+Assume role of "Coder" (/skill/user/coder/SKILLS.md") and execute on Phase 2, 3, 4 (write code, execute, organize reports). Let me know if you have questions. Export report following "Deliverables" section in Phase 4. 
+
+
+-----
+Assume the role of "Analyst" (see /skill/user/analyst for the SKILL.md). I would like to work with you to improve a set of jupyter notebooks that apply ML to TCGA dataset. Below, I provide both context and the objective. Please read the info below carefully, understand the ask and context, then hatch out a plan. Store plan in /skills/user/shared/ for shared context. Ask if you have any questions. 
+
+<background>
+The subfolder /notebooks houses a series of jupyter notebook that analyzes HER2 biology from TCGA RNAseq data and clinical data. After Notebook 01 ("QC and normalization") and Notebook 02 ("HER2 id and subsets") comes Machine Learning application, which is strewn across 3 different iterations with important differences: Notebook 03a performs ML on the whole dataset (concordant and discordant outlier cases) on binary HER2 label, while Notebook 03b performs similar ML analyses on multi-class label derived from unsupervised clusters (which are derived from noisy full transcriptome, and therefore are tentative approximations of subgroups rather than ground truth representations of cancer subtypes). Lastly, Notebook 04 focuses on discordant outlier group by applying ML to a high-confidence concordant subgroup that excludes the outliers from training. for detail on the discordant outlier group (whre HER2 label and RNA expression data do not agree) see "discordant-group" markup tagged section below. Each of the notebooks have different insights to give (see insights markup-tagged section below). Together, the notebooks are weak: they don't tell a tight coherent story, have a lot of duplicated effort, and don't necessarily take into account insights from preceding notebooks. I would like to fix these weaknesses by revising them and consolidating them into one single notebook that tells one story ("ML applied to dataset shows complex heterogeneity in discordant group biology"). The right way to do this, I think, is to strip down Notebooks 03a and 03b (moving a lot of the code to exploratory python script, into /scripts) while keeping most of Notebook 04. One small caveat is that there have been key upstream improvements around normalization (TMM via edger and explicit reduction of TSS bias), which may change the analysis results. My expectation is, they won't too much, but they should be confirmed - then evaluate whether to proceed as planned or to revise plan. The old notebooks should be archived rather than overwritten or discarded, for reference. 
+</background>
+
+<insights>
+- Notebook 03a suggests that ERBB2 expression alone is just as predictive of HER2 label as a larger curated panel. This finding is tempered by the fact that the training data included outlier discordant population (this may be suppressing signal of heterogenous biology in the discordant group, as Notebook 04 will suggest). 
+- Both Notebook 03a (binary) and Notebook 03b (multi-class) show that with full dataset, the discordant group biology is not well captured. 
+- Notebook 04 shows concordant-only model and CN-stratified analysis reveals discordant group biology. 
+</insights>
+
+<weaknesses>
+Here are some weaknesses with the notebook structures. 
+- The notebooks feel like ELN from exploratory work (which is what they actually are) rather than a series of notebooks that tell a coherent story. Some of the work should be spun out and saved as exploratory python code (in /scripts) , while the truly relevant parts should be consolidated into notebook. 
+- there is a lot of redundant, duplicated code. 
+- All 3 Notebooks perform GSEA but the curated set of gene sets most relevant to breast cancer. Note, however, that Notebook 02 performs unsupervised cluster analysis and follows it up with GSEA expression of its own. This higlights potentially interesting gene sets based on data itself, but I don't think this insight is explictly leveraged in Notebooks 03a/b/04. It should at least be acknowledged and compared against. 
+</weaknesses>
+
+<discordant-group>
+======================================================================
+DISCORDANT CASE IDENTIFICATION
+======================================================================
+ERBB2 expression thresholds:
+  Positive median: 15.30
+  Negative median: 12.63
+  High threshold (Neg 95th pctl): 13.75
+  Low threshold (Pos 5th pctl): 11.88
+
+Discordant cases identified: 53 unique patients
+
+Discordance type breakdown:
+  IHC-/RNA-high       : 35 patients
+    → Potential missed HER2+ patients — candidates for RNA-based reclassification
+  CN-low/RNA-high     : 18 patients
+    → Transcriptional upregulation without amplification
+  IHC+/RNA-low        : 8 patients
+    → IHC positive but low RNA — possible antibody artifact or post-translational regulation
+  IHC-low/FISH+       : 3 patients
+    → Amplification without protein overexpression (epigenetic silencing?)
+  IHC3+/FISH-         : 3 patients
+    → Possible polysomy 17 (centromere gain without ERBB2 amplification)
+  CN-high/RNA-low     : 2 patients
+    → Gene amplification without transcription
+</discordant-group>
+
+
+--------------------------------
+
+Assume the role of "Coder" (/skill/user/coder/SKILL.md) and execute on ml_consolidation_plan.md.
+
+---------------------------------
+
+I would like to act on two items in the Report (/skills/user/shared/nb03_analyst_review.md). Assume the role of Strategist (/skills/user/strategist). 
+
+The report discusses Section 2 results, mentioning ML results compared across 3 different feature sets (ERBB2-only, Curated Panel, Pathway Scores). I think this captures an important analysis result, but actually, this is not captured in NB03_ML_and_Discordant_Biology. It seems like you referenced also 03a and 03b. I think we should take this portion of NB03a and incorporate it into NB03, then move 03a and 03b to scripts so that /notebook stays clean. Could you look through these notebooks and make a plan on slightly expanding NB03 and cleaning up the /notebooks subfolder? 
+
+The report also recommends a sensitivity analysis around thresholds that define the concordant group. I think this is important since the concordant model becomes the centerpiece of our scientific arguments. Could you plan such a sensitivity analysis (of moderate scope) testing a few different threshold settings and seeing how key downstream analyses change (CN-stratified group assignment is probably key). 
+
+If you have questions or have concerns, let me know and speak up. Write down the revision plan into /skills/user/shared/. 
+
+
+---------------------------------
+
+The ML analyses in this project (primarily in NB03 in /notebook) paint an interesting and complex picture of HER2 biology and the potential diagnostic value of RNA data. I want to take these insights further and translate them into actionable deliverables to a hypothetical biopharma partner of Tempus. I would like you to assume the role of Strategist (/skills/user/strategist/) and help me plan a series of analyses, first at a high-level, conceptual level. To this end, read the instructions, high level background, and proposed analyses below, and follow the instructions. Let me know if things are not clear. 
+
+<instructions>
+Read and evaluate the high level background and proposed analyses. Think thoroughly about the biology and the clinical needs. Think through the assumptions and think whether there are gaps in the logic, or notable missed opportunities. Note if there are methodological decisions that would mature the proposed analyses (but I would like to keep the discussion high level overall). 
+
+The high level background and proposed analyses focus on the discordant group, but there is also the HER2 equivocal group. Currently, the analysis leaves it "we can use RNA to call HER+/-" (let me know if I am wrong). I am wondering if there is missed opportunities here, but I am a bit stuck. Read through notebooks 02 and 03, and explore possibilities. 
+</instructions>
+
+<high-level-bg>
+The clearest and primary opportunity for biopharma decision-making deliverable is: the discordant group could be a new patient group identified. The HER2-NEG/ERBB2-HIGH/CN=2 group is missed HER2+ patients due to FN readout. The HER2-NEG/ERBB2-HIGH/CN<=1 group could potentially benefit from hormone modulatory treatment. The decision would be to (1) file for companion diagnostic, and more ambitiously (2) launch a retroactive cohort study of either biopharma clinical samples and/or Tempus real world data, with the ultimate goal of label expansion by a future clinical study. Tempus's real world data would help inform on the feasibility and design of such a study, including a potential synthetic control arm in the case of single arm study approach. These are the concrete motivations and long-term objectives that would shape the more immediate analyses below. 
+
+Actual analyses to meet objectives above is not possible (Tempus dataset not available). Here, we need to (1) explicitly discuss that we are thinking about biopharma decision making and deliverables, and (2) leverage the data at hand to facilitate the pre-requisite analyses as follows: 
+</high-level-bg>
+
+<proposed-analyses>
+1. Look at the clinical data table and see what HER2 testing method was used. Was this a confounder to HER2 negative readout? 
+2. What is the approximate  size of this "missed HER2+" population? What seems to be the False Negative rate of the HER2 (in general, method-agnostically, but also, from analysis #1, method specifically. It depends on whether we have enough datapoints). 
+3. For the non-amplified discordant group, the exact mechanism is unclear. Is this unusual baseline behavior (their normal tissues have higher ERBB2 expression rate to begin with) or disease-driven biology (FOXA1 points towards this, this is really a ER-driven/luminal breast cancer type that happens to have incidental ERBB2 expression)? The latter would speak favorably to ER-modulatory therapy. Gene expression analysis comparing normal tissue data with discordant group and high confidence HER2- group would inform on this. Explicit exploration whether there is correlation with ERBB2 and select ER pathway genes could also be informative. 
+4. Are there any statistically significant correlation with either discordant group and demographic/clinical data (age, stage, grade, ER/PR status etc.) or clinical outcome (OS, PFS)? From perusing the clinical data, what could some additional interesting variables be? ("ER positivity scale other" and "HER2 positivity method text" columns caught my eye, and they were cleaned up, yielding /data/brca_tcga_clinical_data_cleaned.csv. In this cleaned version, the "ER positivity scale" was broken into allread, hscore, intensity, percent, fmol, method detail. 
+
+Analyses #1 and #2 and #4 would provide supporting evidence on proposed mechanism (test FN) and inform on opportunity for companion diagnostics filing. #4 could act as a preliminary guide when kickstarting a Tempus-internal real world data analysis. The #3 could give hints on underlying mechanism of action, and therefore whether a retroactive study or RWD analysis is worth it. 
+</proposed-analyses>
+
+
+----------------------------------
+
+Assume the role of Strategist (/skills/user/strategist/). Find /skills/user/shared/biopharma_analysis_plan.md, which outlines are series of analyses to convert interesting scientific findinigs into concrete actionables for biopharma clients. This plan stays high-level and conceptual. I would like you to take this plan and come up with a detailed tactical plan to carry the high-level objectives. The instructions should be either step-by-step instructions (e.g., "find File A, look at column B, and see if C is there") or detailed description of python code that can be executed upon. The reader will be an LLM agent. Any code generated should live in /scripts, given their exploratory nature. Instructions (whether analysis steps or code description) should end with some report writing that describes findings (make a separate organized folder in /reports). These reports will be synthesized later, but that is outside of the scope of this prompt. If you have questions, let me know!
+
+
+-----
+
+Assume the role of Analyst (/skills/user/analyst/). Find /skills/user/shared/biopharma_analysis_plan.md and understand the high level objectives of the analysis. In the same folder, find biopharma_tactical_plan.md to understand the actual analyses that were performed. Find 9 reports in reports/biopharma/ to understand the results. Go through and understand what the scientific and practical implications of the results are. Consider that some analyses were data-walled (not enough data). Based on these results, think about how you want to craft arguments linking scientific/ML results to biopharma deliverables. Save your analysis in markdown file in /reports/biopharma. 
+
+
+------
+
+Assume the role of Strategist (/skills/user/strategist/) and help me plan out synthesizing a jupyter notebook that tells a coherent story about biopharma deliverables translated from scientific findings of earlier notebooks (01, 02a, 03). The story is described below between markup tags labeled "high-level-story". Read and understand the story, consider if it needs adjustment or reframing, think about what analysis results and figures support the story and deserve a spot in the notebook. Once you decide what analyses and figures stay, plan out the steps needed to construct such a notebook and save it as a markdown file in /skills/user/shared/. If something is not clear, or you have a question, please be vocal and let me know. 
+
+<high-level-story>
+The biopharma deliverable story is found in /reports/biopharma/00_synthesis_andstrategic_assessment.md, and clearly has two parts: (1) the Equivocal group, for which, analyses show that multi-modal test (RNA/CN/ER/PR) recovers FISH-based HER2 label with high accuracy. And (2) the discordant group, specifically a subgroup with Negative ICH, high EBRR2 expression and high copy number, is a potential new bucket of patients (so called "missed HER2"). The analyses quantifies this IHC-missed population and also explores how the CN-based stratification carries real biological signal (high/low CN maps well to HER2-enriched versus luminal subtypes). 
+
+The long-term values and objectives for a hypothetical biopharma client is (1) companion diagnostics filing for Equivocal group that would simplify or accelerate clinical workflow, and (2) prospective study opportunity and strategy. 
+
+Bridging our analysis results and the long-term objectives are the immediate-term opportunities for Tempus: retrospective studies on its real world dataset (that has treatment outcome, which TCGA lacks) that would provide validation of our findings. 
+
+The analysis includes other findings that provide support to this two-part story. This includes negative readout of clinical correlates as well as other tentative/hypothesis-generating analyses. 
+</high-level-story>
+
+-------

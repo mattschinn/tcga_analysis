@@ -147,7 +147,7 @@ HER2/ER signal.
 
 ## 4. Where the Methods Disagree (Key Divergences)
 
-### 4a. Read-depth confounding (E3) -- the sharpest divergence
+### 4a. Read-depth confounding (E3)
 
 | Method  | PC1 vs read-depth (r) |
 |---------|-----------------------|
@@ -155,15 +155,23 @@ HER2/ER signal.
 | TPM     | 0.234                 |
 | TMM     | -0.015                |
 
-TMM virtually eliminates read-depth confounding in the primary axis of variation.
-RSEM-UQ leaves a moderate confound (r=0.31), meaning ~10% of PC1 variance correlates
-with sequencing depth. TPM partially corrects this (r=0.23). TMM essentially zeroes
-it out (r=-0.01, indistinguishable from no correlation).
+**Correction (2026-04-07):** The RSEM-UQ E3 value above was computed from UQ data
+*without* TSS correction, due to a bug in `run_rsem.py` (loaded `01_tumor_norm`
+instead of `01_tumor_norm_uq_tss`). TMM and TPM both had TSS correction applied,
+making this an apples-to-oranges comparison. With TSS correction applied to all
+methods, the corrected values are approximately: RSEM-UQ-TSS r ~ 0.18, TMM-TSS
+r ~ 0.14. The original dramatic gap was primarily showing the effect of TSS batch
+correction, not the TMM-vs-UQ normalization difference.
 
-**Why this matters:** Any downstream analysis that uses PCA-derived features
-(clustering, dimensionality reduction, visualization) will carry read-depth bias under
-RSEM-UQ. For a clinical application like HER2 classification, you do not want a
-patient's predicted status to depend on how deeply their sample was sequenced.
+TSS batch correction (regression with protected HER2/ER covariates) is the primary
+mechanism for removing read-depth-correlated confounds. After TSS correction, the
+residual depth correlation is modest for all methods, with TMM providing a small
+additional reduction.
+
+**Why this matters:** Read-depth confounding in PCA-derived features is a real concern
+for clinical applications. TSS batch correction is the critical step for addressing
+this. TMM provides a modest additional benefit, but its primary advantage over UQ
+lies in ERBB2 signal preservation (Sections 2, 4b, 6b), not read-depth correction.
 
 ### 4b. ERBB2 CV within HER2+ patients (E4)
 
@@ -251,9 +259,11 @@ TPM are comparatively close to each other, while TMM is in a different tier.
 **Why does TMM win signal?** Because UQ over-corrects HER2+ samples (Section 2). TMM
 recovers signal that UQ had suppressed.
 
-**Why does TMM win noise?** Primarily because of E3 (read-depth confound
-near zero). TMM was designed to handle exactly this kind of composition-driven
-library size variation.
+**Why does TMM win noise?** In the original (uncorrected) comparison, primarily
+because the RSEM-UQ arm lacked TSS correction while TMM had it applied. With
+TSS correction on both, the noise advantage narrows considerably. TMM retains
+a modest edge on E1 (TSS-CV) and E3 (residual read-depth), but TSS batch
+correction is the dominant noise-reduction mechanism.
 
 ---
 
@@ -290,11 +300,11 @@ Several lines of evidence converge:
    advantage of RNA over CN. For discordant cases where CN and IHC disagree, RNA
    provides the most additional information under TMM normalization.
 
-4. **Near-zero read-depth confound (E3=-0.015):** Under TMM, the primary axis of
-   transcriptomic variation is almost entirely free of sequencing-depth artifacts.
-   This means a patient classified as "IHC-negative but RNA-high" is unlikely to be a
-   sequencing-depth artifact. Under RSEM-UQ (E3=0.31), you cannot rule out that some
-   "discordant" calls are driven by high sequencing depth rather than genuine biology.
+4. **Lower residual read-depth confound:** With TSS correction applied to both
+   methods, TMM shows modestly lower residual PC1-vs-depth correlation (r ~ 0.14
+   vs 0.18 for UQ-TSS). TSS batch correction is the primary driver of read-depth
+   confound removal. The original E3 comparison (r=-0.015 vs 0.310) was inflated
+   by a bug where the UQ arm lacked TSS correction -- see Section 4a correction.
 
 5. **Preserved within-group heterogeneity (E4=0.168):** TMM preserves more biological
    variation within the HER2+ group than RSEM-UQ (0.133). This heterogeneity is real:
@@ -384,9 +394,11 @@ composition-dependent library size effects.
 
 **Use TMM-edgeR normalization for all downstream HER2 analyses**, including discordant
 patient identification, ML classification, and subtype characterization. TMM provides
-the best signal-to-noise balance (scorecard: 0.893 vs 0.345 for TPM and 0.262 for
-RSEM-UQ), eliminates read-depth confounding, and preserves biological heterogeneity
-within HER2-status groups.
+the best signal preservation across the 25-metric comparison (Cohen's d = 2.19,
+AUC-ROC = 0.863, HER2 cluster purity = 0.591) and preserves biological heterogeneity
+within HER2-status groups. Combined with TSS batch correction (which is the primary
+driver of read-depth confound removal), TMM+TSS produces the cleanest analytical
+foundation for downstream work.
 
 The RSEM-UQ pipeline should be retained as a sensitivity analysis to confirm that key
 findings (e.g., number of discordant patients, their CN stratification) are robust to

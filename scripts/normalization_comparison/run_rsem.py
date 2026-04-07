@@ -1,13 +1,14 @@
 """
 Phase 1 (re-run through shared pipeline): RSEM-UQ-TSS baseline.
 
-Loads the existing TSS-corrected normalized matrix (01_tumor_norm, which is
-UQ-normalized + log2(x+1) + TSS regression-corrected) and runs it through
-the shared analysis pipeline, producing report.md and report_metrics.json
-in reports/norm_comparison/rsem_uq_tss/ for use by run_comparison.py.
+Loads the UQ-normalized + TSS-corrected matrix (01_tumor_norm_uq_tss) and
+runs it through the shared analysis pipeline, producing report.md and
+report_metrics.json in reports/norm_comparison/rsem_uq_tss/ for use by
+run_comparison.py.
 
-This replaces the standalone scripts/extract_rsem_report.py for the purpose
-of Phase 4 comparison (identical pipeline, consistent JSON format).
+NOTE: An earlier version incorrectly loaded 01_tumor_norm (UQ without TSS),
+creating an apples-to-oranges comparison against TMM+TSS. Fixed 2026-04-07
+to load 01_tumor_norm_uq_tss so both methods are compared with TSS applied.
 """
 
 import sys
@@ -25,9 +26,9 @@ def main():
     print("PHASE 1 (shared pipeline): RSEM-UQ-TSS BASELINE")
     print("=" * 70)
 
-    # Load the TSS-corrected normalized expression (this is the established pipeline output)
+    # Load UQ + TSS-corrected expression (must match TMM+TSS for fair comparison)
     print("\nLoading intermediates...")
-    tumor_norm = load_intermediate('01_tumor_norm')
+    tumor_norm = load_intermediate('01_tumor_norm_uq_tss')
     clinical = load_intermediate('01_clinical_qc')
     cn = load_intermediate('01_cn_qc')
     gene_cols = load_gene_cols()
